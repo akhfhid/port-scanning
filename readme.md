@@ -1,245 +1,246 @@
-# Ultra Port Scanner (Julia)
+# Port Scanner (Julia)
 
-Port scanner multithreaded ditulis dengan Julia — memindai port TCP pada target host, opsi banner grabbing, dan kemampuan menjalankan perintah shell ketika port terbuka.
+**Summary**
 
-> **Catatan penting:** gunakan alat ini hanya pada target yang kamu miliki izin eksplisit untuk memindai. Port scanning tanpa izin dapat dianggap tindakan intrusi dan melanggar hukum atau kebijakan jaringan.
-
----
-
-## Fitur
-
-* Mendukung pemindaian port tunggal, daftar port (dipisah koma), rentang (`1000-2000`) atau `all` (1–65535).
-* Multithreaded (sesuaikan `--threads`).
-* Opsi banner grab (`--grab`) untuk membaca data awal dari service.
-* Opsi menjalankan perintah shell saat port terbuka (`--action`), dengan placeholder `{host}` dan `{port}`.
-* Output berupa JSON (satu baris) cocok untuk pemrosesan lebih lanjut.
+Ultra Port Scanner is a compact, multi-threaded port-scanning script written in Julia. It can scan a list or range of ports (or all ports 1–65535), perform optional banner grabs, and execute a shell command template for each open port. Output is available in a human-friendly (ANSI-colored) format or as JSON for machine consumption.
 
 ---
 
-## Prasyarat
+## Features
 
-* Julia 1.x (disarankan versi terbaru stable)
-* Paket Julia:
+* Concurrent port scanning using `Base.Threads`.
+* Supports port lists and ranges like `80,443,1000-2000` and the keyword `all` for 1–65535.
+* Optional banner grabbing (reads initial bytes from a service).
+* Optional shell command template executed for each open port. Template supports `{host}` and `{port}` placeholders.
+* Human-readable ANSI-colored output or JSON-only output for piping.
+* Built-in mapping for common service ports (e.g., 22 → SSH, 80 → HTTP).
 
-  * `ArgParse`
-  * `JSON3`
+---
 
-Instal paket yang diperlukan (dijalankan di REPL Julia):
+## Dependencies
+
+* Julia 1.x (recommended latest stable release)
+* Julia packages used (some are built-in):
+
+  * `Sockets` (builtin)
+  * `Dates` (builtin)
+  * `Printf` (builtin)
+  * `JSON3` (install with `] add JSON3`)
+  * `Base.Threads` (builtin)
+  * `ArgParse` (install with `] add ArgParse`)
+
+---
+
+## Installation
+
+1. Ensure Julia is installed.
+2. Install external packages from the Julia REPL if needed:
 
 ```julia
-using Pkg
-Pkg.add("ArgParse")
+import Pkg
 Pkg.add("JSON3")
+Pkg.add("ArgParse")
+```
+
+3. Save the script as `scan-port.jl`.
+
+---
+
+## Usage
+
+Basic syntax:
+
+```sh
+julia scan-port.jl <host> <ports> [--timeout N] [--grab] [--action "CMD_TEMPLATE"] [--json-output]
+```
+
+Important flags:
+
+* `<host>` — target hostname or IP.
+* `<ports>` — single ports, ranges, or `all` (e.g. `22,80,443` or `1000-2000` or `all`).
+* `--timeout`, `-t` — connection timeout in seconds (default `2.0`).
+* `--grab`, `-g` — enable banner grabbing.
+* `--action`, `-a` — shell command template executed for open ports. Use `{host}` and `{port}` placeholders.
+* `--json-output`, `-j` — print only JSON for open ports.
+
+---
+
+## Examples
+
+1. Scan ports 22, 80 and 443 on `example.com`:
+
+```sh
+julia scan-port.jl example.com "22,80,443"
+```
+
+2. Scan range 1000–1010 on `192.168.1.10`, banner-grab, output JSON:
+
+```sh
+julia scan-port.jl 192.168.1.10 "1000-1010" -g -j
+```
+
+3. Scan all ports on `localhost` and echo a message when open ports are found:
+
+```sh
+julia scan-port.jl localhost all -a "echo Port {port} on {host} is open"
 ```
 
 ---
 
-## Cara menjalankan
+## Example outputs
 
-Pastikan file script (mis. `check_port_ultra.jl`) dapat dieksekusi atau jalankan lewat `julia`:
+> Note: The following outputs are simulated examples for documentation. Actual results depend on the scanned host.
 
-```bash
-# Menjalankan langsung jika executable
-./check_port_ultra.jl <host> "<ports>" [opsi]
+### Human-readable (ANSI colored)
 
-# Atau lewat julia
-julia check_port_ultra.jl <host> "<ports>" [opsi]
+```
+Starting scan of 3 ports on example.com...
+
+Scan finished in 00:00:02.345678. Found 2 open ports.
+--------------------------------------
+[32mPORT 22[0m (SSH) is [32mOPEN[0m
+  Banner: SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3
+[32mPORT 443[0m (HTTPS) is [32mOPEN[0m
+  Banner: HTTP/1.1 400 Bad Request
+Server: nginx/1.18.0
+--------------------------------------
 ```
 
-### Argumen & opsi
-
-* `host` — hostname atau alamat IP target (positional, wajib).
-* `ports` — port tunggal, daftar dipisah koma, rentang (`1000-2000`), atau `all`.
-
-Opsi:
-
-* `--timeout`, `-t` — timeout koneksi (detik). Default: `2.0`.
-* `--threads`, `-T` — jumlah thread worker. Default: `200`.
-* `--grab`, `-g` — flag untuk melakukan banner grab (mencoba membaca data dari service setelah connect).
-* `--action`, `-a` — template perintah shell untuk dijalankan bila port terbuka. Gunakan placeholder `{host}` dan `{port}`.
-
-### Contoh
-
-Scan port 22 dan 80:
-
-```bash
-julia check_port_ultra.jl example.com "22,80"
-```
-
-Scan rentang 1–1024 dengan 100 thread dan timeout 1 detik:
-
-```bash
-julia check_port_ultra.jl 192.168.1.1 "1-1024" -T 100 -t 1.0
-```
-
-Scan semua port (HATI-HATI):
-
-```bash
-julia check_port_ultra.jl 10.0.0.5 all -T 500
-```
-
-Scan dan ambil banner lalu jalankan action ketika port terbuka:
-
-```bash
-julia check_port_ultra.jl host.com "22,80" -g -a "echo Port {port} terbuka di {host}"
-```
-
----
-
-## Format output
-
-Script mengeluarkan satu baris JSON yang merupakan array objek. Contoh (disederhanakan):
+### JSON-only (using `--json-output`)
 
 ```json
 [
-  {"port":22,"status":"open","banner":"SSH-2.0-OpenSSH_8.2p1...","action_output":""},
-  {"port":23,"status":"closed","banner":null,"action_output":null}
+  {
+    "port": 22,
+    "status": "open",
+    "service": "SSH",
+    "banner": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+    "action_output": null
+  },
+  {
+    "port": 443,
+    "status": "open",
+    "service": "HTTPS",
+    "banner": "HTTP/1.1 400 Bad Request\r\nServer: nginx/1.18.0",
+    "action_output": null
+  }
 ]
 ```
 
-Field:
+---
 
-* `port` — port yang dipindai (integer).
-* `status` — `open` atau `closed`.
-* `banner` — string hasil banner grab atau `null` jika tidak ada / tidak diminta.
-* `action_output` — output dari perintah shell jika `--action` dipakai, atau `null`.
+## How it works (technical)
+
+* `is_port_open` attempts `Sockets.connect(host, port, timeout)` and treats successful connect as an open port.
+* `banner_grab` connects and reads up to a configurable number of kilobytes from the socket.
+* Concurrency model: create a `Channel{Int}` filled with ports and spawn `Threads.nthreads()` workers which consume from the channel and scan ports.
+* Results are collected into a shared vector `results` guarded by a `ReentrantLock` to avoid races.
 
 ---
 
-## Keterbatasan & catatan teknis
+## systemd service example
 
-* **Permissions & legal:** pastikan kamu punya izin untuk memindai target.
-* **Resource:** default `--threads=200` bisa tinggi untuk sistem tertentu — sesuaikan berdasarkan CPU/IO dan limit file descriptor.
-* **Timeout & banner grab:** banner grab saat ini menunggu sampai sejumlah byte atau loop berulang; bisa jadi butuh perbaikan timeout baca untuk menghindari hanging.
-* **Keamanan:** opsi `--action` mengeksekusi perintah shell. Jangan menjalankan action yang tidak tepercaya karena berisiko injection/eksekusi berbahaya.
-* **Silent errors:** beberapa `catch` di script menangkap error tanpa logging — ini memudahkan pemindaian tapi menyulitkan debugging.
+Create a systemd unit file `/etc/systemd/system/ultra-port-scanner.service` to run the scanner as a simple service. **Only use this on hosts where you have permission.**
 
----
+```ini
+[Unit]
+Description=Ultra Port Scanner (Julia)
+After=network.target
 
-## Saran perbaikan (opsional)
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ultra-port-scanner
+ExecStart=/usr/bin/julia /opt/ultra-port-scanner/scan-port.jl example.com "22,80,443" -g -j
+User=nobody
+Group=nogroup
+Nice=10
 
-* Ganti mekanisme queue `ports` dengan `Channel` untuk performa dan penanganan concurrency yang lebih baik.
-* Validasi input port agar berada dalam rentang `1..65535`.
-* Tambahkan timeout baca untuk `banner_grab` dan/atau batas waktu total per port.
-* Tambahkan mode verbose / logging untuk debugging.
-* Sanitasi input untuk `--action` atau hindari eksekusi shell langsung.
-
----
-
-## Kontribusi
-
-PR dan issue dipersilakan. Untuk perubahan besar, buatkan issue terlebih dahulu agar kita dapat berdiskusi.
-
----
-
-## Lisensi
-
-Lisensi default: MIT (ubah sesuai kebutuhan).
-
----
-
-## LICENSE (MIT)
-
-```
-MIT License
-
-Copyright (c) YEAR AUTHOR
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+[Install]
+WantedBy=multi-user.target
 ```
 
-Ganti `YEAR` dan `AUTHOR` sesuai repo-mu (mis. `2025 Affan Khulafa`).
+Reload systemd and enable/run the unit:
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl enable --now ultra-port-scanner.service
+```
+
+Use `sudo journalctl -u ultra-port-scanner.service -f` to inspect output.
 
 ---
 
-## Contoh direktori & file tambahan
+## Makefile example
 
-Berikut contoh file yang mungkin berguna saat mengunggah ke GitHub.
+A simple `Makefile` to run common tasks:
 
-### 1) `examples/run_scan.sh`
+```makefile
+JULIA ?= julia
+SCRIPT = scan-port.jl
+TARGET = example.com
+PORTS = "22,80,443"
 
-Skrip shell sederhana untuk menjalankan scanner (executable `check_port_ultra.jl` harus ada di folder yang sama):
+.PHONY: scan json grab all
 
-```bash
-#!/usr/bin/env bash
-# contoh: ./run_scan.sh example.com "22,80" -T 50 -t 1.5 -g -a "echo Port {port} di {host}"
-TARGET="$1"
-PORTS="$2"
-shift 2
+scan:
+	$(JULIA) $(SCRIPT) $(TARGET) $(PORTS)
 
-if [[ -z "$TARGET" || -z "$PORTS" ]]; then
-  echo "Usage: $0 <target> \"<ports>\" [extra args]"
-  exit 1
-fi
+json:
+	$(JULIA) $(SCRIPT) $(TARGET) $(PORTS) -j
 
-julia check_port_ultra.jl "$TARGET" "$PORTS" "$@"
+grab:
+	$(JULIA) $(SCRIPT) $(TARGET) $(PORTS) -g
+
+all:
+	$(JULIA) $(SCRIPT) localhost all -g -j
 ```
 
-Jangan lupa `chmod +x examples/run_scan.sh`.
+Run for example `make scan` or `make json`.
 
 ---
 
-### 2) `examples/action_example.sh`
+## Dockerfile example
 
-Contoh action yang bisa dipanggil lewat `--action` (misal untuk catatan/log ketika port terbuka):
+A minimal Dockerfile that runs the scanner inside a container. This image will run the scanner once (as a `CMD`), so it fits batch/CI usage.
 
-```bash
-#!/usr/bin/env bash
-HOST="$1"
-PORT="$2"
-TIMESTAMP=$(date --iso-8601=seconds)
-LOGFILE="open_ports.log"
+```dockerfile
+FROM julia:1.9-bullseye
 
-echo "[$TIMESTAMP] Open port $PORT on $HOST" >> "$LOGFILE"
+WORKDIR /opt/ultra-port-scanner
+
+# Copy script
+COPY scan-port.jl /opt/ultra-port-scanner/scan-port.jl
+
+# Install necessary Julia packages
+RUN julia -e "import Pkg; Pkg.add([\"JSON3\", \"ArgParse\"])"
+
+ENTRYPOINT ["julia", "scan-port.jl"]
+# Example default arguments (can be overridden at runtime)
+CMD ["example.com", "22,80,443"]
 ```
 
-Contoh pemanggilan via scanner:
+Build and run:
 
-```bash
-julia check_port_ultra.jl 192.168.1.10 "22,80" -g -a "examples/action_example.sh {host} {port}"
-```
-
-> Catatan: `--action` menjalankan perintah melalui `/bin/sh -c`, sehingga jika action script berada di file, sertakan path relatif atau absolut. Pastikan script executable.
-
----
-
-### 3) `.gitignore` rekomendasi
-
-Tambahkan file log dan file temporer agar tidak ter-commit:
-
-```
-*.log
-*.tmp
-.env
+```sh
+docker build -t ultra-port-scanner .
+docker run --rm ultra-port-scanner
+# override args
+docker run --rm ultra-port-scanner 192.168.1.10 "1000-1010" -g -j
 ```
 
 ---
 
-### 4) `CONTRIBUTING.md` (singkat)
+## Legal & Ethical Notice
 
-Tambahkan file `CONTRIBUTING.md` kecil yang berisi panduan singkat kontribusi:
+Port scanning may be considered intrusive or illegal if performed without permission. Only scan systems and networks you own or have explicit authorization to test. The author is not responsible for misuse of this software.
 
-```
-1. Fork repo.
-2. Buat branch fitur/bugfix: git checkout -b feat/namafitur
-3. Commit perubahan, push ke fork.
-4. Buat Pull Request dan jelaskan perubahan.
-```
+---
+
+## Development notes & improvements
+
+* Add a CLI option to set the worker thread count (e.g., `--threads`).
+* Improve banner extraction for protocols that require an initial request (e.g., HTTP, SMTP) — currently the script only reads unsolicited data.
+* Add rate limiting and backoff to avoid triggering intrusion detection systems.
+* Consider adding optional TCP SYN scan support via raw sockets (requires elevated privileges) or integrate with `nmap` for more advanced scanning features.
 
 ---
