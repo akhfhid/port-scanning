@@ -42,8 +42,6 @@ git clone https://github.com/akhfhid/port-scanning.git
 cd port-scanning
 ```
 
-This repository contains `scan-port.jl` (the scanner script), an example `Makefile`, a `Dockerfile`, and this `README`.
-
 ### Install Julia packages
 
 From the Julia REPL in the project folder, run:
@@ -159,17 +157,17 @@ Server: nginx/1.18.0
 
 ## systemd service example
 
-Create a systemd unit file `/etc/systemd/system/ultra-port-scanner.service` to run the scanner as a simple service. **Only use this on hosts where you have permission.**
+Create a systemd unit file `/etc/systemd/system/port-scanner.service` to run the scanner as a simple service. **Only use this on hosts where you have permission.**
 
 ```ini
 [Unit]
-Description=Ultra Port Scanner (Julia)
+Description=Port Scanner (Julia)
 After=network.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/ultra-port-scanner
-ExecStart=/usr/bin/julia /opt/ultra-port-scanner/scan-port.jl example.com "22,80,443" -g -j
+WorkingDirectory=/opt/port-scanner
+ExecStart=/usr/bin/julia /opt/port-scanner/scan-port.jl example.com "22,80,443" -g -j
 User=nobody
 Group=nogroup
 Nice=10
@@ -182,10 +180,10 @@ Reload systemd and enable/run the unit:
 
 ```sh
 sudo systemctl daemon-reload
-sudo systemctl enable --now ultra-port-scanner.service
+sudo systemctl enable --now port-scanner.service
 ```
 
-Use `sudo journalctl -u ultra-port-scanner.service -f` to inspect output.
+Use `sudo journalctl -u port-scanner.service -f` to inspect output.
 
 ---
 
@@ -225,10 +223,10 @@ A minimal Dockerfile that runs the scanner inside a container. This image will r
 ```dockerfile
 FROM julia:1.9-bullseye
 
-WORKDIR /opt/ultra-port-scanner
+WORKDIR /opt/port-scanner
 
 # Copy script
-COPY scan-port.jl /opt/ultra-port-scanner/scan-port.jl
+COPY scan-port.jl /opt/port-scanner/scan-port.jl
 
 # Install necessary Julia packages
 RUN julia -e "import Pkg; Pkg.add([\"JSON3\", \"ArgParse\"])"
@@ -241,10 +239,10 @@ CMD ["example.com", "22,80,443"]
 Build and run:
 
 ```sh
-docker build -t ultra-port-scanner .
-docker run --rm ultra-port-scanner
+docker build -t port-scanner .
+docker run --rm port-scanner
 # override args
-docker run --rm ultra-port-scanner 192.168.1.10 "1000-1010" -g -j
+docker run --rm port-scanner 192.168.1.10 "1000-1010" -g -j
 ```
 
 ---
@@ -265,3 +263,4 @@ Port scanning may be considered intrusive or illegal if performed without permis
 ---
 
 © 2025 akhfhid — Repository: akhfhid/port-scanning
+
