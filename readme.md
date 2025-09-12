@@ -2,7 +2,7 @@
 
 **Summary**
 
-Ultra Port Scanner is a compact, multi-threaded port-scanning script written in Julia. It can scan a list or range of ports (or all ports 1–65535), perform optional banner grabs, and execute a shell command template for each open port. Output is available in a human-friendly (ANSI-colored) format or as JSON for machine consumption.
+Port Scanner is a compact, multi-threaded port-scanning script written in Julia. It can scan a list or range of ports (or all ports 1–65535), perform optional banner grabs, and execute a shell command template for each open port. Output is available in a human-friendly (ANSI-colored) format or as JSON for machine consumption.
 
 ---
 
@@ -33,8 +33,20 @@ Ultra Port Scanner is a compact, multi-threaded port-scanning script written in 
 
 ## Installation
 
-1. Ensure Julia is installed.
-2. Install external packages from the Julia REPL if needed:
+### Clone the repository
+
+Clone your repository from GitHub (replace with your preferred path):
+
+```sh
+git clone https://github.com/akhfhid/port-scanning.git
+cd port-scanning
+```
+
+This repository contains `scan-port.jl` (the scanner script), an example `Makefile`, a `Dockerfile`, and this `README`.
+
+### Install Julia packages
+
+From the Julia REPL in the project folder, run:
 
 ```julia
 import Pkg
@@ -42,7 +54,14 @@ Pkg.add("JSON3")
 Pkg.add("ArgParse")
 ```
 
-3. Save the script as `scan-port.jl`.
+### Save/Verify script
+
+Make sure the main script is present and executable (or run it with the `julia` command):
+
+```sh
+ls -l scan-port.jl
+julia scan-port.jl --help
+```
 
 ---
 
@@ -244,3 +263,5 @@ Port scanning may be considered intrusive or illegal if performed without permis
 * Consider adding optional TCP SYN scan support via raw sockets (requires elevated privileges) or integrate with `nmap` for more advanced scanning features.
 
 ---
+
+© 2025 akhfhid — Repository: akhfhid/port-scanning
