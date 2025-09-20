@@ -50,7 +50,7 @@ function main()
     println("\nDone — $tot_open open total")
     out = Dict(ip => Dict(string(p) => (open ? (dr === nothing ? "open" : dr.extras) : "closed")
                           for (p, open, dr) in res) for (ip, res) in results)
-    file = "hunt_$(domain)_$(now()).json"
+    file = "hunt_$(domain)_$(Dates.format(now(), "yyyy-mm-dd_HH-MM-SS")).json"
     open(file, "w") do f
         JSON3.pretty(f, out)
     end
