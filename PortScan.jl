@@ -94,7 +94,7 @@ function tls_cert(host, port=443)
                     "san"      => MbedTLS.get_san(cert),
                     "not_before"=> string(MbedTLS.not_before(cert)),
                     "not_after" => string(MbedTLS.not_after(cert))),
-                    "tls_version" => string(MbedTLS.get_version(ctx)))
+                    "tls_version" => string(MbedTLS.get_version(ctx))
     catch e
         return Dict("error"=>string(e))
     end
