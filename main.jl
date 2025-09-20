@@ -47,11 +47,18 @@ function main()
             println()
         end
     end
+    if dr !== nothing
+        sec = get(dr.extras, "security", Dict())
+        print("  → $(dr.service)  ")
+        print(sec["level"] == "CRITICAL" ? RED : sec["level"] == "WARNING" ? "\033[33m" : GREEN,
+            "[$(sec["level"])] ", sec["score"], "/10", RESET)
+        isempty(sec["issues"]) || print("  ", sec["issues"])
+    end
     println("\nDone — $tot_open open total")
     out = Dict(ip => Dict(string(p) => (open ? (dr === nothing ? "open" : dr.extras) : "closed")
                           for (p, open, dr) in res) for (ip, res) in results)
     file = "hunt_$(domain)_$(Dates.format(now(), "yyyy-mm-dd_HH-MM-SS")).json"
-    open(file, "w") do f
+    open(file, "w") do fz
         JSON3.pretty(f, out)
     end
     println("Saved: ", file)
